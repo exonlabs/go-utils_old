@@ -8,24 +8,23 @@ import (
     "golang.org/x/term"
 )
 
-type Console struct {
-    PromptCaret string
-}
-
-type InputOpts map[string]any
-
 var (
     redBrightEscape = "\033[31;1m"
     whiteBrightEscape = "\033[37;1m"
     resetEscape = "\033[0m"
 )
 
+type OptArgs map[string]any
+
+type Console struct {
+    PromptCaret string
+}
 
 func NewConsole() *Console {
     return &Console{PromptCaret: ">>"}
 }
 
-func (c *Console) getinput(msg string, opts InputOpts) (string, error) {
+func (c *Console) getinput(msg string, args OptArgs) string {
     oldstate, err := term.MakeRaw(int(os.Stdin.Fd()))
     if err != nil {
         return "", err
@@ -61,7 +60,7 @@ func (c *Console) getinput(msg string, opts InputOpts) (string, error) {
 
 }
 
-func (c *Console) GetValue(msg string, opts InputOpts) (string, error) {
+func (c *Console) GetValue(msg string, args OptArgs) string {
 
     return c.getinput(msg, opts)
     // fmt.Println(">> user input ? ----", msg)
@@ -75,7 +74,7 @@ func (c *Console) GetValue(msg string, opts InputOpts) (string, error) {
     // return "none", nil
 }
 
-func (c *Console) GetPassword() (string, error) {
+func (c *Console) GetPassword() string {
     fmt.Println(">> user password ? ----")
     return "none", nil
 }
@@ -96,6 +95,6 @@ func (c *Console) GetPassword() (string, error) {
 
 // }
 
-// func (c *Console) AskYesNo() {
+// func (c *Console) SelectYesNo() {
 
 // }

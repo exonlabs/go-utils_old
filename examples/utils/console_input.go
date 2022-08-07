@@ -12,17 +12,21 @@ func main() {
 
     opts := map[string]any{"required": true}
     res, err := ch.GetValue("Enter your first name", opts)
-    if err != nil {panic(err)}
+    if err != nil {
+        panic(err)
+    }
     fmt.Printf("  * First name: %s\n", res)
 
     // ch.Passwd()
 }
 
 func panicHandler() {
-    err := recover();
-    if err != nil && fmt.Sprint(err) == "EOF" {
-        fmt.Printf("\n-- terminated --\n")
-        return
+    err := recover()
+    if err != nil {
+        if fmt.Sprint(err) == "EOF" {
+            fmt.Printf("\n-- terminated --\n")
+            return
+        }
+        panic(err)
     }
-    panic(err)
 }
