@@ -1,22 +1,24 @@
 package sqlite
 
 import (
+	"database/sql"
+
+	_ "github.com/mattn/go-sqlite3"
+
 	"github.com/exonlabs/go-utils/pkg/db"
 )
-
 
 type Session struct {
 	db.BaseSession
 }
 
-
-func NewSession(options map[string]any, logger any, debug uint8) *Session {
-	this := Session{}
-	this.Session = &this
+func NewSession(options map[string]any, logger any, debug uint8) db.ISession {
+	var this Session
+	this.ISession = &this
 	this.Backend = "sqlite"
 	this.Options = options
 	this.Debug = debug
-	this.IsConnected = false
+	this.Is_Connected = false
 
 	// TODO: implement real logger
 	// this.Logger = logger
@@ -32,58 +34,23 @@ func NewSession(options map[string]any, logger any, debug uint8) *Session {
 	return &this
 }
 
+func (this *Session) Query(model db.IModel) *db.BaseQuery {
+	return &db.BaseQuery{
+		DBs:   this,
+		Model: model,
+	}
+}
 func (this *Session) Connect() {
-	// TODO
+	if val, ok := this.Options["database"]; ok {
+		db, err := sql.Open("sqlite3", val.(string))
+		if err != nil {
+			panic(err)
+		}
+		this.SqlDB = db
+	} else {
+		// todo log message v
+		panic("invalid database configuration")
+	}
 
-	this.IsConnected = true
-}
-
-func (this *Session) Close() {
-	// TODO
-
-	this.IsConnected = false
-}
-
-func (this *Session) DoExecute(query string, params ...any) (bool, string) {
-	// TODO
-
-	return true, ""
-}
-
-func (this *Session) DoExecuteScript(query_script string) (bool, string) {
-	// TODO
-
-	return true, ""
-}
-
-func (this *Session) FetchOne() *map[string]any {
-	// TODO
-
-	return nil
-}
-
-func (this *Session) FetchAll() *[]map[string]any {
-	// TODO
-
-	return nil
-}
-
-func (this *Session) RowCount() int32 {
-	// TODO
-
-	return -1
-}
-
-func (this *Session) LastRowId() int32 {
-	// TODO
-
-	return -1
-}
-
-func (this *Session) Commit() {
-	// TODO
-}
-
-func (this *Session) RollBack() {
-	// TODO
+	this.Is_Connected = true
 }

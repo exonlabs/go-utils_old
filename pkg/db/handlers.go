@@ -1,30 +1,22 @@
 package db
 
-import (
-	"fmt"
-)
-
-
 type IDBHandler interface {
-	CreateSession() *ISession
-	InitDatabase([]Model) bool
+	CreateSession() ISession
+	InitDatabase([]IModel) bool
 }
 
 type BaseDBHandler struct {
-	IDBHandler
-
 	Options map[string]any
-	Logger any
+	Logger  any
 	Backend string
 }
 
-
 // return session handler object
-func (this *BaseDBHandler) CreateSession() *ISession {
+func (this *BaseDBHandler) CreateSession() ISession {
 	panic("NOT_IMPLEMENTED")
 }
 
 // create database tables and initialize data
-func (this *BaseDBHandler) InitDatabase(models []Model) bool {
-	return true
+func (this *BaseDBHandler) InitDatabase(models []IModel) bool {
+	return false
 }
