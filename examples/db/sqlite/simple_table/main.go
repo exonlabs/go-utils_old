@@ -37,7 +37,7 @@ var Foobar = foobar{
 	db.BaseModel{
 		Table_Name: "foobar",
 		Table_Columns: [][]string{
-			{"col1", "TEXT NOT NULL"},
+			{"col1", "TEXT NOT NULL", "UNIQUE INDEX"},
 			{"col2", "TEXT"},
 			{"col3", "INTEGER"},
 			{"col4", "BOOLEAN NOT NULL DEFAULT 0"},
@@ -74,15 +74,25 @@ func main() {
 		fmt.Println(item)
 	}
 
+	fmt.Println("Total Items:", dbh.CreateSession().Query(&Foobar).Count())
+
+	fmt.Println("Update first row")
+	dbh.CreateSession().Query(&Foobar).
+		FilterBy("col3", 1).
+		Update(map[string]any{"col1": "boo_1", "col2": "boo_2"})
+
+	fmt.Println("DELETE second row")
+	dbh.CreateSession().
+		Query(&Foobar).
+		FilterBy("col3", 2).
+		Delete()
+
+	fmt.Println("Total Items:", dbh.CreateSession().Query(&Foobar).Count())
 }
 
 func panicHandler() {
 	err := recover()
 	if err != nil {
-		if fmt.Sprint(err) == "EOF" {
-			fmt.Printf("\n-- terminated --\n")
-			return
-		}
 		panic(err)
 	}
 }

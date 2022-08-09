@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -14,12 +15,12 @@ type IQuery interface {
 	Limit(limit int32) IQuery
 	Offset(offset int32) IQuery
 	Select() []map[string]any
-	// First() *map[string]any
-	// One() *map[string]any
-	// Count() uint32
+	First() map[string]any
+	One() map[string]any
+	Count() uint32
 	Insert(map[string]any) error
-	// Update(, map[string]any) uint32
-	// Delete() uint32
+	Update(map[string]any) error
+	Delete() error
 	CreateTable()
 }
 
@@ -133,22 +134,87 @@ func (this *BaseQuery) Select() []map[string]any {
 	return this.DBs.FetchAll(q)
 }
 
-func (this *BaseQuery) Insert(data map[string]any) error {
-	var values []any
-	q := "INSERT INTO " + this.Model.TableName() + "("
-	for k, v := range data {
-		q += k
-		q += ", "
-		values = append(values, v)
+// return first element matching select query
+func (this *BaseQuery) First() map[string]any {
+	return this.Select()[0]
+}
+
+// return one element matching select query or nil
+//
+//	there must be only one element if exists
+func (this *BaseQuery) One() map[string]any {
+	res := this.Limit(2).Select()
+	if res != nil {
+		if len(res) > 2 {
+			panic("multiple entries found")
+		}
+		return res[0]
 	}
-	q = strings.TrimSpace(q)
-	q = strings.TrimSuffix(q, ",")
-	q += ") VALUES ("
-	q += strings.Repeat("? ,", len(data))
+	return nil
+}
+
+func (this *BaseQuery) Count() uint32 {
+	q := "SELECT count(*) as count FROM " + SqlIdentifier(this.Model.TableName())
+	if len(this._filters) > 0 {
+		q += "\nWHERE " + strings.Join(this._filters, " ")
+	}
+	if len(this._groupby) > 0 {
+		q += "\nGROUP BY " + strings.Join(this._groupby, ", ")
+	}
+	q += ";"
+	this.DBs.Connect()
+	data := this.DBs.FetchOne(q)
+	return uint32(data["count"].(int64))
+}
+
+func (this *BaseQuery) Insert(data map[string]any) error {
+	var columns []string
+	var params []any
+	for k, v := range data {
+		columns = append(columns, SqlIdentifier(k))
+		params = append(params, v)
+	}
+
+	q := "INSERT INTO " + this.Model.TableName()
+	q += fmt.Sprintf("\n(%s)", strings.Join(columns, ", "))
+	q += "\nVALUES"
+	q += fmt.Sprintf("\n(%s", strings.Repeat("? ,", len(columns)))
 	q = strings.TrimSuffix(q, ",")
 	q += ")"
+	q += ";"
+
 	this.DBs.Connect()
-	return this.DBs.Execute(q, values...)
+	return this.DBs.Execute(q, params...)
+}
+
+func (this *BaseQuery) Update(data map[string]any) error {
+	var columns []string
+	var params []any
+	for k, v := range data {
+		columns = append(columns, SqlIdentifier(k))
+		params = append(params, v)
+	}
+
+	q := "UPDATE " + this.Model.TableName()
+	q += fmt.Sprintf("\nSET %s", strings.Join(columns, "= ?, "))
+	q += "= ?"
+	if len(this._filters) > 0 {
+		q += "\nWHERE " + strings.Join(this._filters, " ")
+		params = append(params, this._execargs...)
+	}
+
+	this.DBs.Connect()
+	return this.DBs.Execute(q, params...)
+}
+
+func (this *BaseQuery) Delete() error {
+	q := "DELETE FROM " + this.Model.TableName()
+	if len(this._filters) > 0 {
+		q += "\nWHERE " + strings.Join(this._filters, " ")
+	}
+
+	this.DBs.Connect()
+	return this.DBs.Execute(q, this._execargs...)
 }
 
 func (this *BaseQuery) CreateTable() {

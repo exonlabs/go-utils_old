@@ -13,7 +13,7 @@ type ISession interface {
 	Connect()
 	Close()
 	Execute(string, ...any) error
-	FetchOne() map[string]any
+	FetchOne(string, ...any) map[string]any
 	FetchAll(string, ...any) []map[string]any
 	RowsAffected() int64
 	LastInsertId() int64
@@ -47,7 +47,7 @@ func (this *BaseSession) Query(model IModel) *BaseQuery {
 }
 
 func (this *BaseSession) IsConnected() bool {
-	panic("NOT_IMPLEMENTED")
+	return this.Is_Connected
 }
 
 func (this *BaseSession) Connect() {
@@ -55,13 +55,19 @@ func (this *BaseSession) Connect() {
 }
 
 func (this *BaseSession) Close() {
-	if err := this.SqlDB.Close(); err != nil {
-		panic(err)
+	if this.Is_Connected {
+		if err := this.SqlDB.Close(); err != nil {
+			panic(err)
+		}
+		this.Is_Connected = false
 	}
-	this.Is_Connected = false
 }
 
 func (this *BaseSession) Execute(sql string, params ...any) error {
+	if !this.Is_Connected {
+		panic("not connected")
+	}
+
 	if this.sqlTX != nil {
 		_, err := this.sqlTX.Exec(sql, params...)
 		if err != nil {
@@ -76,11 +82,19 @@ func (this *BaseSession) Execute(sql string, params ...any) error {
 	return nil
 }
 
-func (this *BaseSession) FetchOne() map[string]any {
-	panic("NOT_IMPLEMENTED")
+func (this *BaseSession) FetchOne(sql string, params ...any) map[string]any {
+	if !this.Is_Connected {
+		panic("not connected")
+	}
+
+	return this.FetchAll(sql, params...)[0]
 }
 
 func (this *BaseSession) FetchAll(sql string, params ...any) []map[string]any {
+	if !this.Is_Connected {
+		panic("not connected")
+	}
+
 	rows, err := this.SqlDB.Query(sql, params...)
 	if err != nil {
 		log.Println("All Rows Error:", err)
@@ -92,12 +106,10 @@ func (this *BaseSession) FetchAll(sql string, params ...any) []map[string]any {
 		log.Println("All Cols Error:", err)
 	}
 
-	// create slice of ModelData to fill data
+	// create slice of map to fill data
 	var data []map[string]any
 
 	for rows.Next() {
-		// create ModelData variable to append value to []ModelData
-		d := make(map[string]any, len(cols))
 		// create a slice of any's to represent each column,
 		// and a second slice to contain pointers to each item in the columns slice.
 		columns := make([]any, len(cols))
@@ -109,7 +121,9 @@ func (this *BaseSession) FetchAll(sql string, params ...any) []map[string]any {
 		if err := rows.Scan(columnPointers...); err != nil {
 			log.Println("All Scan Error:", err)
 		}
-
+		// create our map, and retrieve the value for each column from the pointers slice,
+		// storing it in the map with the name of the column as the key.
+		d := make(map[string]any, len(cols))
 		for k, colName := range cols {
 			val := columnPointers[k].(*any)
 			d[colName] = *val
@@ -139,6 +153,9 @@ func (this *BaseSession) Begin() {
 }
 
 func (this *BaseSession) Commit() {
+	if !this.Is_Connected {
+		panic("not connected")
+	}
 	if err := this.sqlTX.Commit(); err != nil {
 		panic(err)
 	}
@@ -146,6 +163,9 @@ func (this *BaseSession) Commit() {
 }
 
 func (this *BaseSession) RollBack() {
+	if !this.Is_Connected {
+		panic("not connected")
+	}
 	if err := this.sqlTX.Rollback(); err != nil {
 		panic(err)
 	}
