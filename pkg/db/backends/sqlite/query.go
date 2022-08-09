@@ -11,7 +11,7 @@ type Query struct {
 	db.BaseQuery
 }
 
-func NewQuery(dbs db.ISession, model db.IModel) *Query {
+func NewQuery(dbs db.ISession, model db.IModel) db.IQuery {
 	var this Query
 	this.IQuery = &this
 	this.DBs = dbs
