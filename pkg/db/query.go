@@ -1,9 +1,12 @@
 package db
 
 import (
+	"encoding/hex"
 	"fmt"
 	"strconv"
 	"strings"
+
+	uuid "github.com/satori/go.uuid"
 )
 
 type IQuery interface {
@@ -131,7 +134,7 @@ func (this *BaseQuery) Select() []map[string]any {
 	}
 	q += ";"
 	this.DBs.Connect()
-	return this.DBs.FetchAll(q)
+	return this.DBs.FetchAll(q, this._execargs...)
 }
 
 // return first element matching select query
@@ -170,6 +173,12 @@ func (this *BaseQuery) Count() uint32 {
 func (this *BaseQuery) Insert(data map[string]any) error {
 	var columns []string
 	var params []any
+
+	if _, ok := data["guid"]; !ok {
+		columns = append(columns, "guid")
+		params = append(params, this.generateGuid())
+	}
+
 	for k, v := range data {
 		columns = append(columns, SqlIdentifier(k))
 		params = append(params, v)
@@ -190,6 +199,11 @@ func (this *BaseQuery) Insert(data map[string]any) error {
 func (this *BaseQuery) Update(data map[string]any) error {
 	var columns []string
 	var params []any
+
+	if _, ok := data["guid"]; ok {
+		delete(data, "guid")
+	}
+
 	for k, v := range data {
 		columns = append(columns, SqlIdentifier(k))
 		params = append(params, v)
@@ -219,4 +233,8 @@ func (this *BaseQuery) Delete() error {
 
 func (this *BaseQuery) CreateTable() {
 	panic("NOT_IMPLEMENTED")
+}
+
+func (this *BaseQuery) generateGuid() string {
+	return hex.EncodeToString(uuid.NewV5(uuid.NewV1(), uuid.NewV4().String()).Bytes())
 }

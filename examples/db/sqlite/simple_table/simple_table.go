@@ -42,7 +42,7 @@ var Foobar = foobar{
 			{"col3", "INTEGER"},
 			{"col4", "BOOLEAN NOT NULL DEFAULT 0"},
 		},
-		Table_Constraints: "PRIMARY KEY (\"col1\")",
+		// Table_Constraints: "PRIMARY KEY (\"col1\")",
 	},
 }
 
@@ -57,16 +57,14 @@ func main() {
 
 	log.Println("DB initialize: Done")
 
-	log.Println("All entries:")
+	log.Println("get 7 entries:")
 	items := dbh.CreateSession().Query(&Foobar).
 		// Columns("col1").
-		// FilterBy("col1", 1).
-		// Filters("AND (col2=? OR col3 IN (?,?))", true, 2, 3).
-		// Filters("AND col3 LIKE ?", "xyz").
-		// FilterBy("col99", 99).
-		// GroupBy("col1").GroupBy("col2").
-		// OrderBy("colx desc", "coly ASC").
-		Limit(100).
+		FilterBy("col1", "foo_1").
+		Filters("AND (col2=? OR col3 IN (?,?))", "description_3", 1, 3).
+		GroupBy("col1").GroupBy("col2").
+		OrderBy("col1 ASC").
+		Limit(7).
 		// Offset(30).
 		Select()
 

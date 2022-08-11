@@ -28,7 +28,22 @@ func (this *BaseModel) TableArgs() map[string]any {
 }
 
 func (this *BaseModel) TableColumns() [][]string {
-	return this.Table_Columns
+	var res [][]string
+	guid := false
+	// check if table_column has "guid"
+	for _, table_column := range this.Table_Columns {
+		if table_column[0] == "guid" {
+			guid = true
+		}
+	}
+	// if not column append "guid"
+	if !guid {
+		res = [][]string{
+			{"guid", "TEXT NOT NULL", "PRIMARY"},
+		}
+	}
+	res = append(res, this.Table_Columns...)
+	return res
 }
 
 func (this *BaseModel) TableConstraints() string {

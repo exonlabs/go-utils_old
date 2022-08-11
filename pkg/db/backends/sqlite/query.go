@@ -54,11 +54,14 @@ func (this *Query) CreateTable() {
 
 	sql := "CREATE TABLE IF NOT EXISTS " + this.Model.TableName() + " ("
 	sql += strings.Join(defs, ",\n")
+	sql = strings.TrimSpace(sql)
+	sql = strings.TrimSuffix(sql, ",")
 	if _, ok := this.Model.TableArgs()["without_rowid"]; ok {
 		sql += "\n) WITHOUT ROWID;\n"
 	} else {
 		sql += "\n);\n"
 	}
+
 	// open transaction
 	this.DBs.Begin()
 	if err := this.DBs.Execute(sql); err != nil {

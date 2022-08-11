@@ -6,6 +6,7 @@ type IDBHandler interface {
 }
 
 type BaseDBHandler struct {
+	IDBHandler
 	Options map[string]any
 	Logger  any
 	Backend string

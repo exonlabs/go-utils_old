@@ -10,6 +10,7 @@ type DBHandler struct {
 
 func NewDBHandler(options map[string]any) db.IDBHandler {
 	var this DBHandler
+	this.IDBHandler = &this
 	this.Logger = nil
 	this.Options = options
 	this.Backend = "sqllite"
@@ -23,12 +24,11 @@ func (this *DBHandler) CreateSession() db.ISession {
 // create database tables and initialize data
 func (this *DBHandler) InitDatabase(models []db.IModel) bool {
 	for _, model := range models {
-		q := NewQuery(this.CreateSession(), model)
+		q := NewQuery(this.IDBHandler.CreateSession(), model)
 		q.CreateTable()
 	}
 	for _, model := range models {
-		q := NewQuery(this.CreateSession(), model)
-		q.Model.InitializeData(this.CreateSession())
+		model.InitializeData(this.IDBHandler.CreateSession())
 	}
 	return true
 }
