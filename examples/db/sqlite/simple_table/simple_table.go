@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
@@ -22,9 +24,10 @@ func (this *foobar) InitializeData(dbs db.ISession) {
 	dbs.Begin()
 	for i := 1; i <= 1000; i++ {
 		if err := dbs.Query(this).Insert(map[string]any{
-			"col1": "foo_" + strconv.Itoa(i),
-			"col2": "description_" + strconv.Itoa(i),
-			"col3": i,
+			"col1":     "foo_" + strconv.Itoa(i),
+			"col2":     "description_" + strconv.Itoa(i),
+			"col3":     i,
+			"password": "pass_" + strconv.Itoa(i),
 		}); err != nil {
 			dbs.RollBack()
 			panic(err)
@@ -41,8 +44,16 @@ var Foobar = foobar{
 			{"col2", "TEXT"},
 			{"col3", "INTEGER"},
 			{"col4", "BOOLEAN NOT NULL DEFAULT 0"},
+			{"password", "TEXT NOT NULL"},
 		},
 		// Table_Constraints: "PRIMARY KEY (\"col1\")",
+		Data_Adapters: map[string]func(any) any{
+			"password": func(text any) any {
+				data := fmt.Sprint(text)
+				hash := sha256.Sum256([]byte(data))
+				return hex.EncodeToString(hash[:])
+			},
+		},
 	},
 }
 

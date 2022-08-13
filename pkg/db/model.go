@@ -5,7 +5,7 @@ type IModel interface {
 	TableArgs() map[string]any
 	TableColumns() [][]string
 	TableConstraints() string
-	// DataAdapters() map[string]func(any)any
+	DataAdapters(data map[string]any) map[string]any
 	// DataConverters() map[string]func(any)any
 	InitializeData(ISession)
 	// UpgradeSchema()
@@ -17,6 +17,7 @@ type BaseModel struct {
 	Table_Args        map[string]any
 	Table_Columns     [][]string
 	Table_Constraints string
+	Data_Adapters     map[string]func(any) any
 }
 
 func (this *BaseModel) TableName() string {
@@ -48,6 +49,15 @@ func (this *BaseModel) TableColumns() [][]string {
 
 func (this *BaseModel) TableConstraints() string {
 	return this.Table_Constraints
+}
+
+func (this *BaseModel) DataAdapters(data map[string]any) map[string]any {
+	for key, fn := range this.Data_Adapters {
+		if val, ok := data[key]; ok {
+			data[key] = fn(val)
+		}
+	}
+	return data
 }
 
 func (this *BaseModel) InitializeData(ISession) {}

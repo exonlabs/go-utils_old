@@ -179,6 +179,8 @@ func (this *BaseQuery) Insert(data map[string]any) error {
 		params = append(params, this.generateGuid())
 	}
 
+	data = this.Model.DataAdapters(data)
+
 	for k, v := range data {
 		columns = append(columns, SqlIdentifier(k))
 		params = append(params, v)
@@ -203,6 +205,8 @@ func (this *BaseQuery) Update(data map[string]any) error {
 	if _, ok := data["guid"]; ok {
 		delete(data, "guid")
 	}
+
+	data = this.Model.DataAdapters(data)
 
 	for k, v := range data {
 		columns = append(columns, SqlIdentifier(k))
