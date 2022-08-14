@@ -24,6 +24,7 @@ type Record struct {
 type Logger struct {
 	Name     string
 	Level    uint8
+	Parent   *Logger
 	Handlers []IHandler
 }
 
@@ -48,34 +49,63 @@ func (this *Logger) SetFormatter(fmtstr string) {
 	}
 }
 
-func (this *Logger) Log(level uint8, msg string, args ...any) {
-	record := Record{
-		Timestamp: time.Now().Local(),
-		Name:      this.Name,
-		Level:     level,
-		Message:   fmt.Sprintf(msg, args...),
-	}
+func (this *Logger) Log(record *Record) {
 	for _, hnd := range this.Handlers {
-		hnd.Handle(this, &record)
+		hnd.Handle(this, record)
+	}
+
+	// parent log
+	if this.Parent != nil {
+		this.Parent.Log(record)
 	}
 }
 
 func (this *Logger) Debug(msg string, args ...any) {
-	this.Log(DEBUG, msg, args...)
+	record := Record{
+		Timestamp: time.Now().Local(),
+		Name:      this.Name,
+		Level:     DEBUG,
+		Message:   fmt.Sprintf(msg, args...),
+	}
+	this.Log(&record)
 }
 
 func (this *Logger) Info(msg string, args ...any) {
-	this.Log(INFO, msg, args...)
+	record := Record{
+		Timestamp: time.Now().Local(),
+		Name:      this.Name,
+		Level:     INFO,
+		Message:   fmt.Sprintf(msg, args...),
+	}
+	this.Log(&record)
 }
 
 func (this *Logger) Warn(msg string, args ...any) {
-	this.Log(WARNING, msg, args...)
+	record := Record{
+		Timestamp: time.Now().Local(),
+		Name:      this.Name,
+		Level:     WARNING,
+		Message:   fmt.Sprintf(msg, args...),
+	}
+	this.Log(&record)
 }
 
 func (this *Logger) Error(msg string, args ...any) {
-	this.Log(ERROR, msg, args...)
+	record := Record{
+		Timestamp: time.Now().Local(),
+		Name:      this.Name,
+		Level:     ERROR,
+		Message:   fmt.Sprintf(msg, args...),
+	}
+	this.Log(&record)
 }
 
 func (this *Logger) Fatal(msg string, args ...any) {
-	this.Log(FATAL, msg, args...)
+	record := Record{
+		Timestamp: time.Now().Local(),
+		Name:      this.Name,
+		Level:     FATAL,
+		Message:   fmt.Sprintf(msg, args...),
+	}
+	this.Log(&record)
 }
