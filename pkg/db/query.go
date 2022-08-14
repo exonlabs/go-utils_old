@@ -134,7 +134,11 @@ func (this *BaseQuery) Select() []map[string]any {
 	}
 	q += ";"
 	this.DBs.Connect()
-	return this.DBs.FetchAll(q, this._execargs...)
+	var data []map[string]any
+	for _, val := range this.DBs.FetchAll(q, this._execargs...) {
+		data = append(data, this.Model.DataConverters(val))
+	}
+	return data
 }
 
 // return first element matching select query
