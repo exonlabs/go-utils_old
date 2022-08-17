@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"strings"
 
 	"github.com/exonlabs/go-utils/pkg/logging"
 )
@@ -19,6 +20,8 @@ type ISession interface {
 	Begin()
 	Commit()
 	RollBack()
+	SqlArgsMap(string) string
+	SqlLog(string, ...any)
 }
 
 type BaseSession struct {
@@ -28,12 +31,6 @@ type BaseSession struct {
 	SqlDB        *sql.DB
 	SqlTX        *sql.Tx
 	Is_Connected bool
-}
-
-func (this *BaseSession) LogSql(query string, params ...any) {
-	if this.Logger != nil && this.Logger.Level == logging.DEBUG {
-		this.Logger.Debug("SQL:\n---\n" + query + "\nPARAMS: %v\n---", params...)
-	}
 }
 
 func (this *BaseSession) Query(model IModel) IQuery {
@@ -61,7 +58,8 @@ func (this *BaseSession) Execute(sql string, params ...any) error {
 	if !this.Is_Connected {
 		panic("not connected")
 	}
-
+	sql = this.ISession.SqlArgsMap(sql)
+	this.ISession.SqlLog(sql, params...)
 	if this.SqlTX != nil {
 		_, err := this.SqlTX.Exec(sql, params...)
 		if err != nil {
@@ -88,7 +86,8 @@ func (this *BaseSession) FetchAll(sql string, params ...any) []map[string]any {
 	if !this.Is_Connected {
 		panic("not connected")
 	}
-
+	sql = this.ISession.SqlArgsMap(sql)
+	this.ISession.SqlLog(sql, params...)
 	rows, err := this.SqlDB.Query(sql, params...)
 	if err != nil {
 		panic(err)
@@ -164,4 +163,26 @@ func (this *BaseSession) RollBack() {
 		panic(err)
 	}
 	this.SqlTX = nil
+}
+
+func (this *BaseSession) SqlArgsMap(sql string) string {
+	var newSql string
+
+	if val, ok := this.Options["sql_argmap"]; ok {
+		newSql = strings.Replace(sql, val.(string), "?", -1)
+	} else {
+		newSql = strings.Replace(sql, "$?", "?", -1)
+	}
+
+	return newSql
+}
+
+func (this *BaseSession) SqlLog(query string, params ...any) {
+	if this.Logger != nil && this.Logger.Level == logging.DEBUG {
+		if len(params) > 0 {
+			this.Logger.Debug("SQL:\n---\n"+query+"\nPARAMS: %v\n---", params)
+		} else {
+			this.Logger.Debug("SQL:\n---\n%v\n---", query)
+		}
+	}
 }

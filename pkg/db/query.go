@@ -44,6 +44,7 @@ type BaseQuery struct {
 	StOrderby   []string
 	StLimit     int32
 	StOffset    int32
+	SqlArgsMap  string
 }
 
 // columns: [col1, col2 ...]
@@ -67,10 +68,10 @@ func (this *BaseQuery) Filters(filters string, params ...any) IQuery {
 func (this *BaseQuery) FilterBy(column string, value any) IQuery {
 	if len(this.StFilters) > 0 {
 		this.StFilters = append(
-			this.StFilters, "AND "+SqlIdentifier(column)+"=?")
+			this.StFilters, "AND "+SqlIdentifier(column)+"="+this.SqlArgsMap)
 	} else {
 		this.StFilters = append(
-			this.StFilters, SqlIdentifier(column)+"=?")
+			this.StFilters, SqlIdentifier(column)+"="+this.SqlArgsMap)
 	}
 	this.StExecargs = append(this.StExecargs, value)
 	return this
@@ -218,7 +219,7 @@ func (this *BaseQuery) Insert(data map[string]any) error {
 	q := "INSERT INTO " + this.StTablename
 	q += fmt.Sprintf("\n(%s)", strings.Join(columns, ", "))
 	q += "\nVALUES"
-	q += fmt.Sprintf("\n(%s", strings.Repeat("? ,", len(columns)))
+	q += fmt.Sprintf("\n(%s", strings.Repeat(this.SqlArgsMap+" ,", len(columns)))
 	q = strings.TrimSuffix(q, ",")
 	q += ")"
 	q += ";"
@@ -243,8 +244,8 @@ func (this *BaseQuery) Update(data map[string]any) error {
 	}
 
 	q := "UPDATE " + this.StTablename
-	q += fmt.Sprintf("\nSET %s", strings.Join(columns, "= ?, "))
-	q += "= ?"
+	q += fmt.Sprintf("\nSET %s", strings.Join(columns, "= "+this.SqlArgsMap+", "))
+	q += "= " + this.SqlArgsMap
 	if len(this.StFilters) > 0 {
 		q += "\nWHERE " + strings.Join(this.StFilters, " ")
 		params = append(params, this.StExecargs...)

@@ -19,6 +19,13 @@ func NewQuery(dbs *Session, model db.IModel) *Query {
 	this.Model = model
 	this.StTablename = reflect.Indirect(reflect.ValueOf(model)).
 		FieldByName("TableName").String()
+
+	if val, ok := dbs.Options["sql_argmap"]; ok {
+		this.SqlArgsMap = val.(string)
+	} else {
+		this.SqlArgsMap = "$?"
+	}
+
 	return &this
 }
 
@@ -31,7 +38,7 @@ func (this *Query) CreateTable() {
 	if model.TableColumns[0][0] != "guid" {
 		columns = append(columns, "guid TEXT NOT NULL")
 		constraints = append(constraints, "PRIMARY KEY (guid)")
-		indexes = append(indexes, "CREATE UNIQUE INDEX ix_" + model.TableName + "_guid ON " + model.TableName + " (guid)")
+		indexes = append(indexes, "CREATE UNIQUE INDEX ix_"+model.TableName+"_guid ON "+model.TableName+" (guid)")
 	}
 
 	for _, c := range model.TableColumns {
@@ -71,7 +78,7 @@ func (this *Query) CreateTable() {
 	if _, ok := model.TableArgs["without_rowid"]; ok {
 		sql += "\n) WITHOUT ROWID;\n"
 	} else {
-		sql += "\n);\n"
+		sql += "\n);"
 	}
 
 	// open transaction

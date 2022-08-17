@@ -7,10 +7,12 @@ import (
 
 	"github.com/exonlabs/go-utils/pkg/db"
 	"github.com/exonlabs/go-utils/pkg/db/backends/sqlite"
+	"github.com/exonlabs/go-utils/pkg/logging"
 )
 
 var DB_OPTIONS = map[string]any{
 	"database": "/tmp/test.db",
+	// "sql_argmap": "$?",
 }
 
 type foobar struct {
@@ -48,6 +50,12 @@ func main() {
 	fmt.Println("DB Options:", DB_OPTIONS)
 
 	dbh := sqlite.NewDBHandler(DB_OPTIONS)
+	dbh.Logger = logging.NewLogger()
+	if len(os.Args[1:]) > 0 {
+		if os.Args[1:][0] == "-x" {
+			dbh.Logger.Level = logging.DEBUG
+		}
+	}
 	dbh.InitializeDB([]db.IModel{Foobar})
 
 	fmt.Println("DB initialize: Done")
@@ -70,7 +78,7 @@ func main() {
 
 	fmt.Println("\nGet filter columns entries:")
 	items = dbh.Session().Query(Foobar).
-		Filters("(col2=? OR col3 IN (?,?))", "description_3", 1, 3).
+		Filters("(col2=$? OR col3 IN ($?,$?))", "description_3", 1, 3).
 		OrderBy("col1 ASC").Select()
 	for _, item := range items {
 		fmt.Println(item)

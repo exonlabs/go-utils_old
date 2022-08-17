@@ -42,8 +42,8 @@ func (this *foobar) InitializeData(dbs db.ISession) {
 
 var Foobar = &foobar{
 	db.BaseModel{
-		Table_Name: "foobar",
-		Table_Columns: [][]string{
+		TableName: "foobar",
+		TableColumns: [][]string{
 			{"col1", "TEXT NOT NULL", "UNIQUE INDEX"},
 			{"col2", "TEXT"},
 			{"col3", "INTEGER"},
@@ -51,7 +51,7 @@ var Foobar = &foobar{
 			{"col5", "TEXT NOT NULL"},
 			{"password", "TEXT NOT NULL"},
 		},
-		Data_Adapters: map[string]func(any) any{
+		DataAdapters: map[string]func(any) any{
 			"col5": func(slice any) any {
 				return strings.Join(slice.([]string), ", ")
 			},
@@ -61,7 +61,7 @@ var Foobar = &foobar{
 				return hex.EncodeToString(hash[:])
 			},
 		},
-		Data_Converters: map[string]func(any) any{
+		DataConverters: map[string]func(any) any{
 			"col5": func(text any) any {
 				return strings.Split(text.(string), ", ")
 			},
