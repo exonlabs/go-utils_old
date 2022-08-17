@@ -3,6 +3,7 @@ package db
 import (
 	"encoding/hex"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -10,13 +11,15 @@ import (
 )
 
 type IQuery interface {
-	Columns(columns ...string) IQuery
-	Filters(filters string, params ...any) IQuery
-	FilterBy(column string, value any) IQuery
-	GroupBy(groupby ...string) IQuery
-	OrderBy(orderby ...string) IQuery
-	Limit(limit int32) IQuery
-	Offset(offset int32) IQuery
+	Columns(...string) IQuery
+	Filters(string, ...any) IQuery
+	FilterBy(string, any) IQuery
+	GroupBy(...string) IQuery
+	OrderBy(...string) IQuery
+	Limit(int32) IQuery
+	Offset(int32) IQuery
+	DataAdapters(map[string]any) map[string]any
+	DataConverters(map[string]any) map[string]any
 	Select() []map[string]any
 	First() map[string]any
 	One() map[string]any
@@ -33,50 +36,50 @@ type BaseQuery struct {
 	DBs   ISession
 	Model IModel
 
-	_tablename string
-	_columns   []string
-	_filters   []string
-	_execargs  []any
-	_groupby   []string
-	_orderby   []string
-	_limit     int32
-	_offset    int32
+	StTablename string
+	StColumns   []string
+	StFilters   []string
+	StExecargs  []any
+	StGroupby   []string
+	StOrderby   []string
+	StLimit     int32
+	StOffset    int32
 }
 
 // columns: [col1, col2 ...]
 func (this *BaseQuery) Columns(columns ...string) IQuery {
 	for _, val := range columns {
-		this._columns = append(this._columns, SqlIdentifier(val))
+		this.StColumns = append(this.StColumns, SqlIdentifier(val))
 	}
 	return this
 }
 
 // filters:
 func (this *BaseQuery) Filters(filters string, params ...any) IQuery {
-	this._filters = append(this._filters, filters)
+	this.StFilters = append(this.StFilters, filters)
 	for _, val := range params {
-		this._execargs = append(this._execargs, val)
+		this.StExecargs = append(this.StExecargs, val)
 	}
 	return this
 }
 
 // filter
 func (this *BaseQuery) FilterBy(column string, value any) IQuery {
-	if len(this._filters) > 0 {
-		this._filters = append(
-			this._filters, "AND "+SqlIdentifier(column)+"=?")
+	if len(this.StFilters) > 0 {
+		this.StFilters = append(
+			this.StFilters, "AND "+SqlIdentifier(column)+"=?")
 	} else {
-		this._filters = append(
-			this._filters, SqlIdentifier(column)+"=?")
+		this.StFilters = append(
+			this.StFilters, SqlIdentifier(column)+"=?")
 	}
-	this._execargs = append(this._execargs, value)
+	this.StExecargs = append(this.StExecargs, value)
 	return this
 }
 
 // groupby: [col1, col2 ...]
 func (this *BaseQuery) GroupBy(groupby ...string) IQuery {
 	for _, val := range groupby {
-		this._groupby = append(this._groupby, SqlIdentifier(val))
+		this.StGroupby = append(this.StGroupby, SqlIdentifier(val))
 	}
 	return this
 }
@@ -89,54 +92,76 @@ func (this *BaseQuery) OrderBy(orderby ...string) IQuery {
 		if v[1] != "ASC" && v[1] != "DESC" {
 			panic("invalid sql order type [" + v[1] + "]")
 		}
-		this._orderby = append(
-			this._orderby, SqlIdentifier(v[0])+" "+v[1])
+		this.StOrderby = append(
+			this.StOrderby, SqlIdentifier(v[0])+" "+v[1])
 	}
 	return this
 }
 
 // limit: integer
 func (this *BaseQuery) Limit(limit int32) IQuery {
-	this._limit = limit
+	this.StLimit = limit
 	return this
 }
 
 // offset: integer
 func (this *BaseQuery) Offset(offset int32) IQuery {
-	this._offset = offset
+	this.StOffset = offset
 	return this
+}
+
+func (this *BaseQuery) DataAdapters(data map[string]any) map[string]any {
+	model := reflect.Indirect(reflect.ValueOf(this.Model)).
+		FieldByName("BaseModel").Interface().(BaseModel)
+	for key, fn := range model.DataAdapters {
+		if val, ok := data[key]; ok {
+			data[key] = fn(val)
+		}
+	}
+	return data
+}
+
+func (this *BaseQuery) DataConverters(data map[string]any) map[string]any {
+	model := reflect.Indirect(reflect.ValueOf(this.Model)).
+		FieldByName("BaseModel").Interface().(BaseModel)
+	for key, fn := range model.DataConverters {
+		if val, ok := data[key]; ok {
+			data[key] = fn(val)
+		}
+	}
+	return data
 }
 
 // return all elements matching select query
 func (this *BaseQuery) Select() []map[string]any {
 	q := "SELECT "
-	if len(this._columns) > 0 {
-		q += strings.Join(this._columns, ", ")
+	if len(this.StColumns) > 0 {
+		q += strings.Join(this.StColumns, ", ")
 	} else {
 		q += "*"
 	}
-	q += " FROM " + SqlIdentifier(this.Model.TableName())
+	q += " FROM " + SqlIdentifier(this.StTablename)
 
-	if len(this._filters) > 0 {
-		q += "\nWHERE " + strings.Join(this._filters, " ")
+	if len(this.StFilters) > 0 {
+		q += "\nWHERE " + strings.Join(this.StFilters, " ")
 	}
-	if len(this._groupby) > 0 {
-		q += "\nGROUP BY " + strings.Join(this._groupby, ", ")
+	if len(this.StGroupby) > 0 {
+		q += "\nGROUP BY " + strings.Join(this.StGroupby, ", ")
 	}
-	if len(this._orderby) > 0 {
-		q += "\nORDER BY " + strings.Join(this._orderby, ", ")
+	if len(this.StOrderby) > 0 {
+		q += "\nORDER BY " + strings.Join(this.StOrderby, ", ")
 	}
-	if this._limit > 0 {
-		q += "\nLIMIT " + strconv.Itoa((int)(this._limit))
+	if this.StLimit > 0 {
+		q += "\nLIMIT " + strconv.Itoa((int)(this.StLimit))
 	}
-	if this._offset > 0 {
-		q += "\nOFFSET " + strconv.Itoa((int)(this._offset))
+	if this.StOffset > 0 {
+		q += "\nOFFSET " + strconv.Itoa((int)(this.StOffset))
 	}
 	q += ";"
 	this.DBs.Connect()
 	var data []map[string]any
-	for _, val := range this.DBs.FetchAll(q, this._execargs...) {
-		data = append(data, this.Model.DataConverters(val))
+	for _, val := range this.DBs.FetchAll(q, this.StExecargs...) {
+		data = append(data, this.IQuery.DataConverters(val))
 	}
 	return data
 }
@@ -161,12 +186,12 @@ func (this *BaseQuery) One() map[string]any {
 }
 
 func (this *BaseQuery) Count() uint32 {
-	q := "SELECT count(*) as count FROM " + SqlIdentifier(this.Model.TableName())
-	if len(this._filters) > 0 {
-		q += "\nWHERE " + strings.Join(this._filters, " ")
+	q := "SELECT count(*) as count FROM " + SqlIdentifier(this.StTablename)
+	if len(this.StFilters) > 0 {
+		q += "\nWHERE " + strings.Join(this.StFilters, " ")
 	}
-	if len(this._groupby) > 0 {
-		q += "\nGROUP BY " + strings.Join(this._groupby, ", ")
+	if len(this.StGroupby) > 0 {
+		q += "\nGROUP BY " + strings.Join(this.StGroupby, ", ")
 	}
 	q += ";"
 	this.DBs.Connect()
@@ -183,14 +208,14 @@ func (this *BaseQuery) Insert(data map[string]any) error {
 		params = append(params, this.generateGuid())
 	}
 
-	data = this.Model.DataAdapters(data)
+	data = this.IQuery.DataAdapters(data)
 
 	for k, v := range data {
 		columns = append(columns, SqlIdentifier(k))
 		params = append(params, v)
 	}
 
-	q := "INSERT INTO " + this.Model.TableName()
+	q := "INSERT INTO " + this.StTablename
 	q += fmt.Sprintf("\n(%s)", strings.Join(columns, ", "))
 	q += "\nVALUES"
 	q += fmt.Sprintf("\n(%s", strings.Repeat("? ,", len(columns)))
@@ -210,19 +235,19 @@ func (this *BaseQuery) Update(data map[string]any) error {
 		delete(data, "guid")
 	}
 
-	data = this.Model.DataAdapters(data)
+	data = this.IQuery.DataAdapters(data)
 
 	for k, v := range data {
 		columns = append(columns, SqlIdentifier(k))
 		params = append(params, v)
 	}
 
-	q := "UPDATE " + this.Model.TableName()
+	q := "UPDATE " + this.StTablename
 	q += fmt.Sprintf("\nSET %s", strings.Join(columns, "= ?, "))
 	q += "= ?"
-	if len(this._filters) > 0 {
-		q += "\nWHERE " + strings.Join(this._filters, " ")
-		params = append(params, this._execargs...)
+	if len(this.StFilters) > 0 {
+		q += "\nWHERE " + strings.Join(this.StFilters, " ")
+		params = append(params, this.StExecargs...)
 	}
 
 	this.DBs.Connect()
@@ -230,13 +255,13 @@ func (this *BaseQuery) Update(data map[string]any) error {
 }
 
 func (this *BaseQuery) Delete() error {
-	q := "DELETE FROM " + this.Model.TableName()
-	if len(this._filters) > 0 {
-		q += "\nWHERE " + strings.Join(this._filters, " ")
+	q := "DELETE FROM " + this.StTablename
+	if len(this.StFilters) > 0 {
+		q += "\nWHERE " + strings.Join(this.StFilters, " ")
 	}
 
 	this.DBs.Connect()
-	return this.DBs.Execute(q, this._execargs...)
+	return this.DBs.Execute(q, this.StExecargs...)
 }
 
 func (this *BaseQuery) CreateTable() {

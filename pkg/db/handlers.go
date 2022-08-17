@@ -1,23 +1,40 @@
 package db
 
+import (
+	"github.com/exonlabs/go-utils/pkg/logging"
+)
+
 type IDBHandler interface {
-	CreateSession() ISession
-	InitDatabase([]IModel) bool
+	Session() ISession
+	InitializeDB([]IModel)
 }
 
 type BaseDBHandler struct {
 	IDBHandler
 	Options map[string]any
-	Logger  any
 	Backend string
+	Logger  *logging.Logger
 }
 
 // return session handler object
-func (this *BaseDBHandler) CreateSession() ISession {
+func (this *BaseDBHandler) Session() ISession {
 	panic("NOT_IMPLEMENTED")
 }
 
 // create database tables and initialize data
-func (this *BaseDBHandler) InitDatabase(models []IModel) bool {
-	return false
+func (this *BaseDBHandler) InitializeDB(models []IModel) {
+	// create database structure
+	for _, model := range models {
+		this.IDBHandler.Session().Query(model).CreateTable()
+	}
+
+	// execute migrations
+	for _, model := range models {
+		model.UpgradeSchema(this.IDBHandler.Session())
+	}
+
+	// load initial models data
+	for _, model := range models {
+		model.InitializeData(this.IDBHandler.Session())
+	}
 }

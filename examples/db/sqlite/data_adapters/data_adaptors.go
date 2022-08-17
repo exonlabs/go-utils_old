@@ -1,9 +1,12 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/exonlabs/go-utils/pkg/db"
 	"github.com/exonlabs/go-utils/pkg/db/backends/sqlite"
@@ -18,25 +21,50 @@ type foobar struct {
 }
 
 func (this *foobar) InitializeData(dbs db.ISession) {
-	for i := 1; i <= 5; i++ {
+	dbs.Begin()
+	for i := 1; i <= 1000; i++ {
 		if err := dbs.Query(this).Insert(map[string]any{
 			"col1": "foo_" + strconv.Itoa(i),
 			"col2": "description_" + strconv.Itoa(i),
 			"col3": i,
+			"col5": []string{"foo_" + strconv.Itoa(i),
+				"description_" + strconv.Itoa(i),
+				"pass_" + strconv.Itoa(i),
+			},
+			"password": "pass_" + strconv.Itoa(i),
 		}); err != nil {
+			dbs.RollBack()
 			panic(err)
 		}
 	}
+	dbs.Commit()
 }
 
 var Foobar = &foobar{
 	db.BaseModel{
-		TableName: "foobar",
-		TableColumns: [][]string{
+		Table_Name: "foobar",
+		Table_Columns: [][]string{
 			{"col1", "TEXT NOT NULL", "UNIQUE INDEX"},
 			{"col2", "TEXT"},
 			{"col3", "INTEGER"},
 			{"col4", "BOOLEAN NOT NULL DEFAULT 0"},
+			{"col5", "TEXT NOT NULL"},
+			{"password", "TEXT NOT NULL"},
+		},
+		Data_Adapters: map[string]func(any) any{
+			"col5": func(slice any) any {
+				return strings.Join(slice.([]string), ", ")
+			},
+			"password": func(text any) any {
+				data := fmt.Sprint(text)
+				hash := sha256.Sum256([]byte(data))
+				return hex.EncodeToString(hash[:])
+			},
+		},
+		Data_Converters: map[string]func(any) any{
+			"col5": func(text any) any {
+				return strings.Split(text.(string), ", ")
+			},
 		},
 	},
 }
@@ -54,46 +82,13 @@ func main() {
 
 	var items []map[string]any
 
-	fmt.Println("\nGet all entries:")
-	items = dbh.Session().Query(Foobar).Select()
+	fmt.Println("\nGet 7 entries:")
+	items = dbh.Session().Query(Foobar).
+		Limit(7).Select()
 	for _, item := range items {
 		fmt.Println(item)
 	}
 	fmt.Println("Total Items:", dbh.Session().Query(Foobar).Count())
-
-	fmt.Println("\nGet custom columns entries:")
-	items = dbh.Session().Query(Foobar).
-		Columns("col1").Limit(2).OrderBy("col1 ASC").Select()
-	for _, item := range items {
-		fmt.Println(item)
-	}
-
-	fmt.Println("\nGet filter columns entries:")
-	items = dbh.Session().Query(Foobar).
-		Filters("(col2=? OR col3 IN (?,?))", "description_3", 1, 3).
-		OrderBy("col1 ASC").Select()
-	for _, item := range items {
-		fmt.Println(item)
-	}
-
-	fmt.Println("\nUpdate first row")
-	dbh.Session().Query(Foobar).
-		FilterBy("col3", 1).
-		Update(map[string]any{"col1": "boo_1", "col2": "boo_2"})
-	fmt.Println("\nGet all entries:")
-	items = dbh.Session().Query(Foobar).Select()
-	for _, item := range items {
-		fmt.Println(item)
-	}
-
-	fmt.Println("\nDELETE second row")
-	dbh.Session().Query(Foobar).
-		FilterBy("col3", 2).Delete()
-	fmt.Println("\nGet all entries:")
-	items = dbh.Session().Query(Foobar).Select()
-	for _, item := range items {
-		fmt.Println(item)
-	}
 
 	fmt.Println("")
 }

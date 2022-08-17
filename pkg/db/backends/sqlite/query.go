@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/exonlabs/go-utils/pkg/db"
@@ -11,18 +12,29 @@ type Query struct {
 	db.BaseQuery
 }
 
-func NewQuery(dbs db.ISession, model db.IModel) db.IQuery {
+func NewQuery(dbs *Session, model db.IModel) *Query {
 	var this Query
 	this.IQuery = &this
 	this.DBs = dbs
 	this.Model = model
+	this.StTablename = reflect.Indirect(reflect.ValueOf(model)).
+		FieldByName("TableName").String()
 	return &this
 }
 
 func (this *Query) CreateTable() {
 	var columns, constraints, indexes []string
 
-	for _, c := range this.Model.TableColumns() {
+	model := reflect.Indirect(reflect.ValueOf(this.Model)).
+		FieldByName("BaseModel").Interface().(db.BaseModel)
+
+	if model.TableColumns[0][0] != "guid" {
+		columns = append(columns, "guid TEXT NOT NULL")
+		constraints = append(constraints, "PRIMARY KEY (guid)")
+		indexes = append(indexes, "CREATE UNIQUE INDEX ix_" + model.TableName + "_guid ON " + model.TableName + " (guid)")
+	}
+
+	for _, c := range model.TableColumns {
 		columns = append(columns, db.SqlIdentifier(c[0])+" "+c[1])
 
 		if strings.Contains(c[1], "BOOLEAN") {
@@ -44,19 +56,19 @@ func (this *Query) CreateTable() {
 			indexes = append(indexes, fmt.Sprintf(
 				"CREATE %sINDEX IF NOT EXISTS "+
 					"ix_%s_%s "+
-					"ON \"%s\" (\"%s\");", u, this.Model.TableName(), c[0], this.Model.TableName(), c[0]))
+					"ON \"%s\" (\"%s\");", u, this.StTablename, c[0], this.StTablename, c[0]))
 		}
 	}
 
 	defs := columns
 	defs = append(defs, constraints...)
-	defs = append(defs, this.Model.TableConstraints())
+	defs = append(defs, model.TableConstraints)
 
-	sql := "CREATE TABLE IF NOT EXISTS " + this.Model.TableName() + " ("
+	sql := "CREATE TABLE IF NOT EXISTS " + this.StTablename + " ("
 	sql += strings.Join(defs, ",\n")
 	sql = strings.TrimSpace(sql)
 	sql = strings.TrimSuffix(sql, ",")
-	if _, ok := this.Model.TableArgs()["without_rowid"]; ok {
+	if _, ok := model.TableArgs["without_rowid"]; ok {
 		sql += "\n) WITHOUT ROWID;\n"
 	} else {
 		sql += "\n);\n"
