@@ -196,7 +196,7 @@ func (this *BaseQuery) Count() uint32 {
 	}
 	q += ";"
 	this.DBs.Connect()
-	data := this.DBs.FetchOne(q)
+	data := this.DBs.FetchOne(q, this.StExecargs...)
 	return uint32(data["count"].(int64))
 }
 
