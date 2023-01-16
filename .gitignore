@@ -11,8 +11,8 @@
 *.dylib
 *.test
 *.out
+*.vscode
 
 # ignore folders
 /dist/
 /build/
-/tmp/
