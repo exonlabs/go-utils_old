@@ -5,7 +5,6 @@ import "database/sql"
 const SQL_PLACEHOLDER = "$?"
 
 // generic types
-type LogLevel = uint8
 type KwArgs = map[string]any
 
 // types defining table

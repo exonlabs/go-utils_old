@@ -131,7 +131,9 @@ func (sess *Session) Execute(stmt string, params ...any) error {
 
 	// format statment args placeholder and log
 	stmt = sess.DBh.Engine.FormatSqlStmt(stmt)
-	sess.logSql(stmt, params...)
+	if sess.DBh.Logger != nil && sess.DBh.Debug >= 3 {
+		sess.logSql(stmt, params...)
+	}
 
 	retries := sess.DBh.Options["retries"].(int)
 	retryDelay := int(sess.DBh.Options["retry_delay"].(float64) * 100)
@@ -167,7 +169,9 @@ func (sess *Session) FetchAll(
 
 	// format statment args placeholder and log
 	stmt = sess.DBh.Engine.FormatSqlStmt(stmt)
-	sess.logSql(stmt, params...)
+	if sess.DBh.Logger != nil && sess.DBh.Debug >= 3 {
+		sess.logSql(stmt, params...)
+	}
 
 	retries := sess.DBh.Options["retries"].(int)
 	retryDelay := int(sess.DBh.Options["retry_delay"].(float64) * 100)
@@ -224,14 +228,12 @@ func (sess *Session) RowsAffected() int64 {
 }
 
 func (sess *Session) logSql(stmt string, params ...any) {
-	if sess.DBh.Logger != nil {
-		if len(params) > 0 {
-			sess.DBh.Logger.Debug(
-				"SQL:\n---\n"+stmt+"\nPARAMS: %v\n---", params)
-		} else {
-			sess.DBh.Logger.Debug(
-				"SQL:\n---\n%v\n---", stmt)
-		}
+	if len(params) > 0 {
+		sess.DBh.Logger.Debug(
+			"SQL:\n---\n"+stmt+"\nPARAMS: %v\n---", params)
+	} else {
+		sess.DBh.Logger.Debug(
+			"SQL:\n---\n%v\n---", stmt)
 	}
 }
 

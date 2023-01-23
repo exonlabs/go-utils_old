@@ -8,21 +8,18 @@ type Handler struct {
 	Engine  IEngine
 	Options KwArgs
 	Logger  *logging.Logger
-	Debug   LogLevel
+	Debug   logging.LogLevel
 }
 
 func NewHandler(engine IEngine, options KwArgs) *Handler {
 	// set default options
-	if options["connect_timeout"] == nil ||
-		options["connect_timeout"].(uint) <= 0 {
+	if _, ok := options["connect_timeout"].(uint); !ok {
 		options["connect_timeout"] = 30
 	}
-	if options["retries"] == nil ||
-		options["retries"].(uint) <= 0 {
+	if _, ok := options["retries"].(uint); !ok {
 		options["retries"] = 10
 	}
-	if options["retry_delay"] == nil ||
-		options["retry_delay"].(float32) <= 0 {
+	if _, ok := options["retry_delay"].(float32); !ok {
 		options["retry_delay"] = 0.5
 	}
 

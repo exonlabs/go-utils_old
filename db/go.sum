@@ -1,5 +1,5 @@
-github.com/exonlabs/go-utils/logging v0.0.0-20230122172000-8e713e4eaf73 h1:gazDMhlGcewQEpNHqYWSaKayOLHOiidBaDdM24nRlZM=
-github.com/exonlabs/go-utils/logging v0.0.0-20230122172000-8e713e4eaf73/go.mod h1:yM8y2FyF8Tm6Ac5+rxv4EHL8wJ1QN9+9Em5QAVFUYtM=
+github.com/exonlabs/go-utils/logging v0.0.1 h1:SktLsloiqy9UPzc0I9XSbpUjYb8DLBBf/FsPuByuqBg=
+github.com/exonlabs/go-utils/logging v0.0.1/go.mod h1:yM8y2FyF8Tm6Ac5+rxv4EHL8wJ1QN9+9Em5QAVFUYtM=
 github.com/kr/pretty v0.2.1 h1:Fmg33tUaq4/8ym9TJN1x7sLJnHVwhP33CNkpYV/7rwI=
 github.com/kr/pretty v0.2.1/go.mod h1:ipq/a2n7PKx3OHsz4KJII5eveXtPO4qwEXGdVfWzfnI=
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=

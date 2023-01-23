@@ -41,8 +41,7 @@ func (eng *Engine) Connect(options KwArgs) (*sql.DB, error) {
 		return nil, err
 	}
 
-	val := options["foreign_keys_constraints"]
-	if val == nil || val.(bool) {
+	if v, ok := options["foreign_keys_constraints"].(bool); !ok || v {
 		if _, err := sqlDB.Exec("PRAGMA foreign_keys=ON"); err != nil {
 			sqlDB.Close()
 			return nil, err
