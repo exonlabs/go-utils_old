@@ -17,7 +17,7 @@ func NewEngine() *Engine {
 	return &Engine{}
 }
 
-func NewSqliteHandler(options KwArgs) *db.Handler {
+func NewHandler(options KwArgs) *db.Handler {
 	return db.NewHandler(NewEngine(), options)
 }
 
@@ -31,23 +31,23 @@ func (eng *Engine) FormatSqlStmt(stmt string) string {
 }
 
 func (eng *Engine) Connect(options KwArgs) (*sql.DB, error) {
-	database := options["database"]
-	if database == nil || len(database.(string)) == 0 {
+	// params
+	database, _ := options["database"].(string)
+	if len(database) == 0 {
 		return nil, fmt.Errorf("invalid database configuration")
 	}
+	extargs, _ := options["extargs"].(string)
+	if !strings.Contains(extargs, "_foreign_keys=") {
+		extargs = "_foreign_keys=1&" + extargs
+	}
 
-	sqlDB, err := sql.Open("sqlite3", database.(string))
+	// create data source name
+	dsn := fmt.Sprintf("%v?%v", database, extargs)
+
+	sqlDB, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		return nil, err
 	}
-
-	if v, ok := options["foreign_keys_constraints"].(bool); !ok || v {
-		if _, err := sqlDB.Exec("PRAGMA foreign_keys=ON"); err != nil {
-			sqlDB.Close()
-			return nil, err
-		}
-	}
-
 	return sqlDB, nil
 }
 
@@ -125,7 +125,6 @@ func (eng *Engine) GenTableSchema(
 
 	result := []string{sql}
 	result = append(result, indexes...)
-
 	return result, nil
 }
 

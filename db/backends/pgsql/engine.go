@@ -1,136 +1,158 @@
 package pgsql
 
-// import (
-// 	"database/sql"
-// 	"fmt"
-// 	"strconv"
-// 	"strings"
+import (
+	"database/sql"
+	"fmt"
+	"strconv"
+	"strings"
 
-// 	_ "github.com/lib/pq"
+	_ "github.com/lib/pq"
 
-// 	"github.com/exonlabs/go-utils/pkg/db"
-// 	. "github.com/exonlabs/go-utils/pkg/globals"
-// )
+	"github.com/exonlabs/go-utils/db"
+)
 
-// type Engine struct{}
+type KwArgs = map[string]any
 
-// func NewEngine() *Engine {
-// 	return &Engine{}
-// }
+type Engine struct{}
 
-// func (this *Engine) BackendName() string {
-// 	return "pgsql"
-// }
+func NewEngine() *Engine {
+	return &Engine{}
+}
 
-// func (this *Engine) SqlDB(options TArgs) (*sql.DB, error) {
-// 	for _, v := range []string{"user", "password", "host", "port", "database", "sslmode"} {
-// 		_, ok := options[v]
-// 		if !ok {
-// 			panic("invalid database configuration")
-// 		}
-// 	}
+func NewHandler(options KwArgs) *db.Handler {
+	return db.NewHandler(NewEngine(), options)
+}
 
-// 	connString := fmt.Sprintf("postgres://%v:%v@%v:%d/%v?sslmode=%v",
-// 		options["user"], options["password"], options["host"],
-// 		options["port"], options["database"], options["sslmode"])
+func (eng *Engine) GetBackendName() string {
+	return "pgsql"
+}
 
-// 	db, err := sql.Open("postgres", connString)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+func (eng *Engine) FormatSqlStmt(stmt string) string {
+	numReplace := strings.Count(stmt, db.SQL_PLACEHOLDER)
+	for i := 0; i <= numReplace; i++ {
+		stmt = strings.Replace(
+			stmt, db.SQL_PLACEHOLDER, "$"+strconv.Itoa(i+1), 1)
+	}
+	return stmt
+}
 
-// 	return db, nil
-// }
+func (eng *Engine) Connect(options KwArgs) (*sql.DB, error) {
+	// params
+	database, _ := options["database"].(string)
+	if len(database) == 0 {
+		return nil, fmt.Errorf("invalid database configuration")
+	}
+	host, _ := options["host"].(string)
+	if len(host) == 0 {
+		host = "localhost"
+	}
+	port, _ := options["port"].(int)
+	if port <= 0 {
+		port = 5432
+	}
+	username, _ := options["username"].(string)
+	password, _ := options["password"].(string)
+	extargs, _ := options["extargs"].(string)
+	if !strings.Contains(extargs, "sslmode=") {
+		extargs = "sslmode=disable&" + extargs
+	}
 
-// func (this *Engine) PostConnect(db *sql.DB, options TArgs) error {
-// 	return nil
-// }
+	// create data source name
+	dsn := fmt.Sprintf("%v:%d/%v?%v", host, port, database, extargs)
+	if len(username) > 0 {
+		if len(password) > 0 {
+			dsn = fmt.Sprintf("%v:%v@%v", username, password, dsn)
+		} else {
+			dsn = fmt.Sprintf("%v@%v", username, dsn)
+		}
+	}
 
-// func (this *Engine) TableSchema(model db.IModel, kwargs TArgs) ([]string, error) {
-// 	var err error
+	sqlDB, err := sql.Open("postgres", "postgres://"+dsn)
+	if err != nil {
+		return nil, err
+	}
+	return sqlDB, nil
+}
 
-// 	tblname := model.TableName()
-// 	if kwargs != nil {
-// 		if val, ok := kwargs["table_name"]; ok {
-// 			tblname = val.(string)
-// 		}
-// 	}
-// 	tblname = db.SqlIdentifier(tblname, &err)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("table name: " + err.Error())
-// 	}
+func (eng *Engine) GenTableSchema(
+	tblname db.TableName, meta db.TableMeta) ([]string, error) {
 
-// 	tblcolumns := model.TableColumns()
-// 	if tblcolumns[0][0] != "guid" {
-// 		tblcolumns = append(db.TColumns{
-// 			{"guid", "VARCHAR(32) NOT NULL", "PRIMARY"},
-// 		}, tblcolumns...)
-// 	}
+	// var err error
 
-// 	var expr, constraints, indexes []string
-// 	for _, c := range tblcolumns {
-// 		if strings.Contains(c[1], "BOOLEAN") {
-// 			if strings.Contains(c[1], "0") {
-// 				c[1] = strings.Replace(c[1], "0", "false", -1)
-// 			} else {
-// 				c[1] = strings.Replace(c[1], "1", "true", -1)
-// 			}
-// 			expr = append(expr, db.SqlIdentifier(c[0], &err)+" "+c[1])
-// 			if err != nil {
-// 				return nil, fmt.Errorf("table columns: " + err.Error())
-// 			}
-// 		} else {
-// 			expr = append(expr, db.SqlIdentifier(c[0], &err)+" "+c[1])
-// 			if err != nil {
-// 				return nil, fmt.Errorf("table columns: " + err.Error())
-// 			}
-// 		}
+	// tblname := model.TableName()
+	// if kwargs != nil {
+	// 	if val, ok := kwargs["table_name"]; ok {
+	// 		tblname = val.(string)
+	// 	}
+	// }
+	// tblname = db.SqlIdentifier(tblname, &err)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("table name: " + err.Error())
+	// }
 
-// 		if len(c) <= 2 {
-// 			continue
-// 		}
+	// tblcolumns := model.TableColumns()
+	// if tblcolumns[0][0] != "guid" {
+	// 	tblcolumns = append(db.TColumns{
+	// 		{"guid", "VARCHAR(32) NOT NULL", "PRIMARY"},
+	// 	}, tblcolumns...)
+	// }
 
-// 		if strings.Contains(c[2], "PRIMARY") {
-// 			constraints = append(constraints,
-// 				fmt.Sprintf("PRIMARY KEY (\"%v\")", c[0]))
-// 		} else if strings.Contains(c[2], "UNIQUE") && !strings.Contains(c[2], "INDEX") {
-// 			constraints = append(constraints,
-// 				fmt.Sprintf("UNIQUE (\"%v\")", c[0]))
-// 		}
+	// var expr, constraints, indexes []string
+	// for _, c := range tblcolumns {
+	// 	if strings.Contains(c[1], "BOOLEAN") {
+	// 		if strings.Contains(c[1], "0") {
+	// 			c[1] = strings.Replace(c[1], "0", "false", -1)
+	// 		} else {
+	// 			c[1] = strings.Replace(c[1], "1", "true", -1)
+	// 		}
+	// 		expr = append(expr, db.SqlIdentifier(c[0], &err)+" "+c[1])
+	// 		if err != nil {
+	// 			return nil, fmt.Errorf("table columns: " + err.Error())
+	// 		}
+	// 	} else {
+	// 		expr = append(expr, db.SqlIdentifier(c[0], &err)+" "+c[1])
+	// 		if err != nil {
+	// 			return nil, fmt.Errorf("table columns: " + err.Error())
+	// 		}
+	// 	}
 
-// 		if strings.Contains(c[2], "PRIMARY") || strings.Contains(c[2], "INDEX") {
-// 			u := "UNIQUE "
-// 			indexes = append(indexes, fmt.Sprintf(
-// 				"CREATE %vINDEX IF NOT EXISTS "+
-// 					"ix_%v_%v "+
-// 					"ON \"%v\" (\"%v\");", u,
-// 				tblname, c[0], tblname, c[0]))
-// 		}
-// 	}
+	// 	if len(c) <= 2 {
+	// 		continue
+	// 	}
 
-// 	expr = append(expr, constraints...)
-// 	expr = append(expr, model.TableConstraints()...)
+	// 	if strings.Contains(c[2], "PRIMARY") {
+	// 		constraints = append(constraints,
+	// 			fmt.Sprintf("PRIMARY KEY (\"%v\")", c[0]))
+	// 	} else if strings.Contains(c[2], "UNIQUE") && !strings.Contains(c[2], "INDEX") {
+	// 		constraints = append(constraints,
+	// 			fmt.Sprintf("UNIQUE (\"%v\")", c[0]))
+	// 	}
 
-// 	stmt := "CREATE TABLE IF NOT EXISTS \"" + tblname + "\" (\n"
-// 	stmt += strings.Join(expr, ",\n")
-// 	stmt = strings.TrimSpace(stmt)
-// 	stmt = strings.TrimSuffix(stmt, ",")
-// 	stmt += "\n);"
+	// 	if strings.Contains(c[2], "PRIMARY") || strings.Contains(c[2], "INDEX") {
+	// 		u := "UNIQUE "
+	// 		indexes = append(indexes, fmt.Sprintf(
+	// 			"CREATE %vINDEX IF NOT EXISTS "+
+	// 				"ix_%v_%v "+
+	// 				"ON \"%v\" (\"%v\");", u,
+	// 			tblname, c[0], tblname, c[0]))
+	// 	}
+	// }
 
-// 	result := []string{stmt}
-// 	result = append(result, indexes...)
-// 	return result, nil
-// }
+	// expr = append(expr, constraints...)
+	// expr = append(expr, model.TableConstraints()...)
 
-// func (this *Engine) SqlStmtMapper(sql string, options TArgs) string {
-// 	lenReplace := strings.Count(sql, options["sql_placeholder"].(string))
-// 	for i := 0; i <= lenReplace; i++ {
-// 		sql = strings.Replace(
-// 			sql, options["sql_placeholder"].(string), "$"+strconv.Itoa(i+1), 1)
-// 	}
-// 	return sql
-// }
+	// stmt := "CREATE TABLE IF NOT EXISTS \"" + tblname + "\" (\n"
+	// stmt += strings.Join(expr, ",\n")
+	// stmt = strings.TrimSpace(stmt)
+	// stmt = strings.TrimSuffix(stmt, ",")
+	// stmt += "\n);"
 
-// func (this *Engine) DatabaseErrors() []string {
-// 	return []string{}
-// }
+	// result := []string{stmt}
+	// result = append(result, indexes...)
+	// return result, nil
+	return []string{}, nil
+}
+
+func (eng *Engine) ListRetryErrors() []string {
+	return []string{}
+}

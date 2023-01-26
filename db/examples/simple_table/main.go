@@ -9,6 +9,9 @@ import (
 	"strings"
 
 	"github.com/exonlabs/go-utils/db"
+	"github.com/exonlabs/go-utils/db/backends/mssql"
+	"github.com/exonlabs/go-utils/db/backends/mysql"
+	"github.com/exonlabs/go-utils/db/backends/pgsql"
 	"github.com/exonlabs/go-utils/db/backends/sqlite"
 	"github.com/exonlabs/go-utils/logging"
 	"github.com/exonlabs/go-utils/logging/handlers"
@@ -26,13 +29,12 @@ var (
 		"port":     0,
 		"username": "user1",
 		"password": "123456",
-		"sslmode":  false,
+		"extargs":  "",
 
-		// -- Optional args --
+		// optional
 		// "connect_timeout": 30,
 		// "retries": 10,
 		// "retry_delay": 0.5,
-		// "foreign_keys_constraints": true,
 	}
 )
 
@@ -187,6 +189,8 @@ func main() {
 	debug := flag.Int("x", 0, "set debug modes, (default: 0)")
 	backend := flag.String("backend", "",
 		fmt.Sprintf("select backend [%s]", strings.Join(BACKENDS, "|")))
+	setup := flag.Bool("setup", false,
+		"perform database setup before operation")
 	flag.Parse()
 
 	if *debug > 0 {
@@ -196,40 +200,74 @@ func main() {
 		dbLogger.Level = logging.LEVEL_DEBUG
 	}
 
-	// create database handler
-	var dbh *db.Handler
+	// select database backend
+	var InteractiveConfig func(KwArgs) (KwArgs, error)
+	var InteractiveSetup func(KwArgs) error
+	var NewHandler func(KwArgs) *db.Handler
 	switch *backend {
 	case "sqlite":
 		DB_OPTIONS["database"] = fmt.Sprintf(
 			"/tmp/%v.db", DB_OPTIONS["database"])
-		dbh = sqlite.NewSqliteHandler(DB_OPTIONS)
-	// case "mysql":
-	// 	DB_OPTIONS["host"] = "localhost"
-	// 	DB_OPTIONS["port"] = 3306
-	// 	dbh = sqlite.NewMysqlHandler(DB_OPTIONS)
-	// case "pgsql":
-	// 	DB_OPTIONS["host"] = "localhost"
-	// 	DB_OPTIONS["port"] = 5432
-	// 	dbh = sqlite.NewPgsqlHandler(DB_OPTIONS)
-	// case "mssql":
-	// 	DB_OPTIONS["host"] = "localhost"
-	// 	DB_OPTIONS["port"] = 1433
-	// 	dbh = sqlite.NewMssqlHandler(DB_OPTIONS)
+		InteractiveConfig = sqlite.InteractiveConfig
+		InteractiveSetup = sqlite.InteractiveSetup
+		NewHandler = sqlite.NewHandler
+	case "mysql":
+		DB_OPTIONS["port"] = 3306
+		InteractiveConfig = mysql.InteractiveConfig
+		InteractiveSetup = mysql.InteractiveSetup
+		NewHandler = mysql.NewHandler
+	case "pgsql":
+		DB_OPTIONS["port"] = 5432
+		DB_OPTIONS["username"] = "postgres"
+		DB_OPTIONS["password"] = ""
+		InteractiveConfig = pgsql.InteractiveConfig
+		InteractiveSetup = pgsql.InteractiveSetup
+		NewHandler = pgsql.NewHandler
+	case "mssql":
+		DB_OPTIONS["port"] = 1433
+		DB_OPTIONS["username"] = "sa"
+		DB_OPTIONS["password"] = "root@Root"
+		InteractiveConfig = mssql.InteractiveConfig
+		InteractiveSetup = mssql.InteractiveSetup
+		NewHandler = mssql.NewHandler
 	default:
-		fmt.Print("\nError!! invalid DB backend\n")
-		os.Exit(1)
+		fmt.Print("\nError!! invalid database backend\n\n")
+		return
 	}
-	dbh.Logger = dbLogger
 
 	fmt.Printf("\n* Using backend: %v\n", *backend)
-	fmt.Println("\nDB Options:")
-	for _, v := range []string{
-		"database", "host", "port", "username", "password"} {
-		fmt.Printf("  - %-9v: %v\n", v, DB_OPTIONS[v])
+	fmt.Println("\nConfig:")
+	dbOpts, err := InteractiveConfig(DB_OPTIONS)
+	if err != nil {
+		if strings.Contains(err.Error(), "EOF") {
+			fmt.Print("\n--exit--\n\n")
+		} else {
+			fmt.Printf("Error: %v\n\n", err)
+		}
+		os.Exit(0)
 	}
-	fmt.Println("")
+
+	fmt.Println("\nDB Options:")
+	for _, k := range []string{"database",
+		"host", "port", "username", "password", "extargs"} {
+		fmt.Printf(" - %-9v: %v\n", k, dbOpts[k])
+	}
+
+	if *setup {
+		fmt.Println("\nDB Setup:")
+		if err := InteractiveSetup(dbOpts); err != nil {
+			fmt.Printf("Error: %v\n\n", err)
+			os.Exit(0)
+		}
+		fmt.Println("Done")
+	}
+	fmt.Println()
+
+	// create database handler
+	dbh := NewHandler(dbOpts)
+	dbh.Logger = dbLogger
 
 	runOperations(dbh)
 
-	fmt.Println("")
+	fmt.Println()
 }
