@@ -23,12 +23,14 @@ func NewStdoutLogger(name string) *logging.Logger {
 }
 
 func (hnd *StdoutHandler) HandleRecord(
-	logger *logging.Logger, record *logging.Record) {
+	logger *logging.Logger, record *logging.Record) error {
 	if msg := hnd.ProcessRecord(logger, record); msg != "" {
-		hnd.EmitMessage(msg)
+		return hnd.EmitMessage(msg)
 	}
+	return nil
 }
 
-func (hnd *StdoutHandler) EmitMessage(msg string) {
+func (hnd *StdoutHandler) EmitMessage(msg string) error {
 	fmt.Print(msg + "\n")
+	return nil
 }

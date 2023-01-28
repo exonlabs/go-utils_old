@@ -14,6 +14,6 @@ const (
 
 type IHandler interface {
 	SetFormatter(string)
-	HandleRecord(*Logger, *Record)
-	EmitMessage(string)
+	HandleRecord(*Logger, *Record) error
+	EmitMessage(string) error
 }
