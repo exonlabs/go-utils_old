@@ -1,0 +1,5 @@
+/*
+  :copyright: 2019-2023, ExonLabs. All rights reserved.
+  :license: BSD, see LICENSE for more details.
+*/
+.form-wrapper .form-row>label,.form-wrapper .form-title{font-size:.9em;font-weight:700}[dir=ltr] .form-wrapper .form-row>label{text-align:right;padding-right:25px}[dir=rtl] .form-wrapper .form-row>label{text-align:left;padding-left:25px}.form-wrapper .form-row>label::after{position:absolute;font-weight:700;font-size:1em}.form-wrapper .form-row>label.required::after{content:'*';color:red}[dir=ltr] .form-wrapper .form-row>label.required::after{padding-left:8px}[dir=rtl] .form-wrapper .form-row>label.required::after{padding-right:8px}@media(max-width:576px){[dir=ltr] .form-wrapper .form-row>label{text-align:left}[dir=rtl] .form-wrapper .form-row>label{text-align:right}}

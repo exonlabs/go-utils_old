@@ -1,0 +1,99 @@
+/*
+  :copyright: 2019-2023, ExonLabs. All rights reserved.
+  :license: BSD, see LICENSE for more details.
+*/
+body, html {width:100%; height:100%; min-width:300px; font-size:1rem}
+a, a:hover, a:focus, button:focus {
+  color:inherit; cursor:pointer; outline:none !important}
+
+.ltr {direction:ltr !important}
+.rtl {direction:rtl !important}
+
+.ease {-webkit-transition:all 0.4s ease; -moz-transition:all 0.4s ease;
+  -o-transition:all 0.4s ease; transition:all 0.4s ease}
+
+.scroll {scrollbar-width:thin; scrollbar-color:rgba(0,0,0,0.25) rgba(0,0,0,0.1);
+  transform:translate3d(0,0,0); -ms-transform:translate3d(0,0,0);
+  -webkit-transform:translate3d(0,0,0); -o-transform:translate3d(0,0,0)}
+.scroll::-webkit-scrollbar {width:5px; height:5px}
+.scroll::-webkit-scrollbar-track {-webkit-box-shadow:inset 0 0 6px rgba(0,0,0,0.1)}
+.scroll::-webkit-scrollbar-thumb {background:rgba(0,0,0,0.25)}
+.scroll::-webkit-scrollbar-button {display:none}
+
+.modal-content {box-shadow:0 1px 15px #4c4c4c}
+
+.page-lock {position:fixed; top:0; left:0; width:100%; height:100%;
+  background-color:rgba(50,50,50,0.7); z-index:900000}
+.page-loading {background:rgba(50,50,50,0.7) url('../images/loader.gif') center 45% no-repeat}
+.page-lock .cancel {padding:10px 20px; line-height:20px; margin-bottom:-40px;
+  color:#ccc; font-size:1.1em; font-weight:bold}
+[dir=ltr] .page-lock .cancel {text-align:right}
+[dir=rtl] .page-lock .cancel {text-align:left}
+
+/* bootstrap fixes */
+.input-group-text {line-height:16px}
+.input-group-prepend select:focus, .input-group-append select:focus {z-index:2}
+[dir=ltr] .input-group-append select, [dir=rtl] .input-group-prepend select {
+  border-top-left-radius:0; border-bottom-left-radius:0}
+[dir=ltr] .input-group-prepend select, [dir=rtl] .input-group-append select {
+  border-top-right-radius:0; border-bottom-right-radius:0}
+.custom-file-label::after {display:none}
+.form-control, .custom-select, .custom-file-label, textarea, select {
+  box-shadow:-1px 1px 2px #ececec inset; text-shadow:none}
+.custom-select:focus, select:focus {text-shadow:none; color:inherit}
+.custom-select option, select option {text-shadow:none; color:#343a40}
+.custom-select option, select option:focus {text-shadow:none}
+.custom-file-input+.empty {color:#6c757d7a; text-shadow:none}
+.form-control::placeholder, .custom-select::placeholder, select.empty, select.empty:focus {
+  color:#6c757d7a; text-shadow:none}
+[dir=ltr] input {text-align:left}
+[dir=rtl] input {text-align:right}
+[dir=rtl] .float-left {float:right !important}
+[dir=rtl] .float-right {float:left !important}
+[dir=rtl] .text-left {text-align:right !important}
+[dir=rtl] .text-right {text-align:left !important}
+[dir=rtl] .pull-left {float:right !important}
+[dir=rtl] .pull-right {float:left !important}
+[dir=rtl] .alert-dismissible {padding-left:35px; padding-right:15px}
+[dir=rtl] .alert-dismissible .close {left:0; right:auto !important}
+[dir=rtl] .close {float:left !important}
+
+/* font-awesome fixes */
+[dir=ltr] .fa-ta, [dir=rtl] .fa-tb {margin-right:6px}
+[dir=rtl] .fa-ta, [dir=ltr] .fa-tb {margin-left:6px}
+[dir=rtl] .fa-flip {
+  -webkit-transform:scale(-1, 1); -ms-transform:scale(-1, 1);
+  -ms-filter:"progid:DXImageTransform.Microsoft.BasicImage(rotation=0, mirror=1)";
+  transform:scale(-1, 1); filter:none}
+
+/* PNotify fixes */
+.ui-pnotify {top:auto; right:auto}
+h4.ui-pnotify-title {font-size:1.1em}
+.ui-pnotify-text {float:none}
+[dir=rtl] .ui-pnotify-title {float:right}
+[dir=rtl] .ui-pnotify-text {text-align:right}
+[dir=rtl] .ui-pnotify-closer, .ui-pnotify-sticker {float:left}
+
+
+@media(max-width:400px) {
+  .hidden-xs {display:none}
+}
+
+@media(min-width:401px) {
+  .visible-xs {display:none}
+}
+
+@media(max-width:576px) {
+  .hidden-sm {display:none}
+}
+
+@media(min-width:577px) {
+  .visible-sm {display:none}
+}
+
+@media print {
+  body, html {width:auto; height:auto; display:inline; overflow:visible;
+    page-break-after:avoid; page-break-before:avoid}
+
+  .hidden-print, .ui-pnotify, .ui-pnotify-container {display:none !important}
+}
