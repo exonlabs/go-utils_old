@@ -1,71 +1,117 @@
-package webapp
+package web
 
-// import (
-// 	"encoding/json"
-// 	"net/http"
-// 	"time"
-// )
+import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"errors"
+	"io"
+	"net/http"
+)
 
-// const (
-// 	sessionName = "session"
-// )
+type SessionFactory interface {
+	// create new session store handler
+	Create(*http.Request, http.ResponseWriter) SessionStore
+}
 
-// func (env *ViewEnv) LoadSession() (map[string]any, error) {
-// 	var decKey string
-// 	if v, ok := env.option["secret_key"]; ok {
-// 		decKey = v.(string)
-// 	}
+type SessionStore interface {
+	// load data from session actual store into data buffer
+	Load() error
+	// save data from data buffer into session actual store
+	Save() error
+	// delete all data buffer and session actual store
+	Purge() error
 
-// 	cooike, err := env.GetEncryptionCookie(decKey, sessionName)
-// 	if err != nil && err != http.ErrNoCookie {
-// 		return nil, err
-// 	}
+	// return the whole internal data buffer
+	Buffer() map[string]any
+	// get item by key from data buffer
+	Get(string) (any, bool)
+	// set item by key in data buffer
+	Set(string, any)
+	// delete item by key from data buffer
+	Del(string)
+	// reset data buffer, delete all keys
+	Reset()
+}
 
-// 	var data map[string]any
-// 	if cooike != nil && len(cooike.Value) != 0 {
-// 		// unmarshal json
-// 		if err := json.Unmarshal([]byte(cooike.Value), &data); err != nil {
-// 			return nil, err
-// 		}
-// 	}
+type BaseSessionStore struct {
+	DataBuffer map[string]any
+}
 
-// 	return data, nil
-// }
+func NewBaseSessionStore() *BaseSessionStore {
+	return &BaseSessionStore{
+		DataBuffer: make(map[string]any),
+	}
+}
 
-// func (env *ViewEnv) setSession() error {
-// 	var encKey string
-// 	if v, ok := env.option["secret_key"]; ok {
-// 		encKey = v.(string)
-// 	}
+func (s *BaseSessionStore) Buffer() map[string]any {
+	return s.DataBuffer
+}
 
-// 	session := &http.Cookie{Name: sessionName}
-// 	if v, ok := env.option["session_path"]; ok {
-// 		session.Path = v.(string)
-// 	}
+func (s *BaseSessionStore) Get(key string) (any, bool) {
+	if s.DataBuffer != nil {
+		if value, ok := s.DataBuffer[key]; ok {
+			return value, true
+		}
+	}
+	return nil, false
+}
 
-// 	if v, ok := env.option["session_domain"]; ok {
-// 		session.Domain = v.(string)
-// 	}
+func (s *BaseSessionStore) Set(key string, value any) {
+	if s.DataBuffer == nil {
+		s.DataBuffer = make(map[string]any)
+	}
+	s.DataBuffer[key] = value
+}
 
-// 	if v, ok := env.option["session_expires"]; ok {
-// 		session.Expires = v.(time.Time)
-// 	}
+func (s *BaseSessionStore) Del(key string) {
+	if s.DataBuffer != nil {
+		delete(s.DataBuffer, key)
+	}
+}
 
-// 	if v, ok := env.option["session_maxage"]; ok {
-// 		session.MaxAge = v.(int)
-// 	}
+func (s *BaseSessionStore) Reset() {
+	s.DataBuffer = make(map[string]any)
+}
 
-// 	// marshal session to json
-// 	j, err := json.Marshal(env.Session)
-// 	if err != nil {
-// 		return err
-// 	}
+func (s *BaseSessionStore) encrypt(
+	key []byte, plainText []byte) ([]byte, error) {
 
-// 	session.Value = string(j)
+	// create new AES cipher using the key
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
 
-// 	return env.SetEncryptionCookie(encKey, session)
-// }
+	cipherText := make([]byte, aes.BlockSize+len(plainText))
+	iv := cipherText[:aes.BlockSize]
+	if _, err = io.ReadFull(rand.Reader, iv); err != nil {
+		return nil, err
+	}
+	stream := cipher.NewCFBEncrypter(block, iv)
+	stream.XORKeyStream(cipherText[aes.BlockSize:], plainText)
 
-// func (env *ViewEnv) DeleteSession() error {
-// 	return env.DelCookie(sessionName)
-// }
+	return cipherText, nil
+}
+
+func (s *BaseSessionStore) decrypt(
+	key []byte, cipherText []byte) ([]byte, error) {
+
+	// length of cipherText must be larger than 16 bytes
+	if len(cipherText) < aes.BlockSize {
+		return nil, errors.New("ciphertext length is less than 16 bytes")
+	}
+
+	// create new AES cipher using the key
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+
+	plainText := make([]byte, len(cipherText)-aes.BlockSize)
+	iv := cipherText[:aes.BlockSize]
+	stream := cipher.NewCFBDecrypter(block, iv)
+	stream.XORKeyStream(plainText, cipherText[aes.BlockSize:])
+
+	return plainText, nil
+}

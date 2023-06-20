@@ -1,61 +1,116 @@
-package webapp
+package web
 
 import (
 	"net/http"
-	"strings"
-
-	"github.com/exonlabs/go-utils/logging"
 )
 
-type WebView struct {
+type ViewMeta struct {
 	Name   string
-	Parent *WebServer
-	Log    *logging.Logger
-	Debug  uint8
-
 	Routes []string
-
-	DispatchRequest func(*WebView) string
-	// BeforeRequest func(*WebView) string
-	// AfterRequest func(*WebView, string) string
-	GET  func(*WebView) string
-	POST func(*WebView) string
-	// PUT func(*WebView, *Env) string
-	// DELETE func(*WebView, *Env) string
-
-	Env *Env
 }
 
-func (v *WebView) handleRequest() string {
-	var contents string
+func NewViewMeta(name string, routes ...string) *ViewMeta {
+	return &ViewMeta{
+		Name:   name,
+		Routes: routes,
+	}
+}
 
-	if v.DispatchRequest != nil {
-		contents = v.DispatchRequest(v)
-	} else if v.GET != nil {
-		contents = v.GET(v)
-	} else {
-		contents = "Method Not Allowed"
-		v.Env.Response.StatusCode = http.StatusMethodNotAllowed
+type View interface {
+	Meta() *ViewMeta
+}
+
+type ViewDispatchRequest interface {
+	DispatchRequest(*Context) *Response
+}
+type ViewBeforeRequest interface {
+	BeforeRequest(*Context) *Response
+}
+type ViewAfterRequest interface {
+	AfterRequest(*Context, *Response) *Response
+}
+type ViewHandleRequest interface {
+	HandleRequest(*Context) *Response
+}
+type ViewDoHead interface {
+	DoHead(*Context) *Response
+}
+type ViewDoGet interface {
+	DoGet(*Context) *Response
+}
+type ViewDoPost interface {
+	DoPost(*Context) *Response
+}
+type ViewDoPut interface {
+	DoPut(*Context) *Response
+}
+type ViewDoPatch interface {
+	DoPatch(*Context) *Response
+}
+type ViewDoDelete interface {
+	DoDelete(*Context) *Response
+}
+
+func dispatchRequest(ctx *Context, view View) *Response {
+	// delegate execution to view dispatch method if exist
+	if v, ok := view.(ViewDispatchRequest); ok {
+		return v.DispatchRequest(ctx)
 	}
 
-	return contents
-}
+	var resp *Response
 
-// check xhr/ajax request type
-func (v *WebView) IsXhrRequest() bool {
-	h := v.Env.Request.Header
-	return strings.Contains(h.Get("X-Requested-With"), "XMLHttpRequest")
-}
+	// run before request method if exist and return if there is
+	// generated response after call
+	if v, ok := view.(ViewBeforeRequest); ok {
+		resp = v.BeforeRequest(ctx)
+		if resp != nil {
+			return resp
+		}
+	}
 
-// json or xhr/ajax request type
-func (v *WebView) IsJsRequest() bool {
-	h := v.Env.Request.Header
-	return strings.Contains(h.Get("Content-Type"), "json") ||
-		strings.Contains(h.Get("X-Requested-With"), "XMLHttpRequest")
-}
+	// run handle request method if exist
+	if v, ok := view.(ViewHandleRequest); ok {
+		resp = v.HandleRequest(ctx)
+	} else {
+		// run method matching the http method
+		switch ctx.Request.Method {
+		case http.MethodPost:
+			if v, ok := view.(ViewDoPost); ok {
+				resp = v.DoPost(ctx)
+			}
+		case http.MethodGet:
+			if v, ok := view.(ViewDoGet); ok {
+				resp = v.DoGet(ctx)
+			}
+		case http.MethodHead:
+			if v, ok := view.(ViewDoHead); ok {
+				resp = v.DoHead(ctx)
+			} else if v, ok := view.(ViewDoGet); ok {
+				// run GET as alternative to head
+				resp = v.DoGet(ctx)
+			}
+		case http.MethodPut:
+			if v, ok := view.(ViewDoPut); ok {
+				resp = v.DoPut(ctx)
+			}
+		case http.MethodPatch:
+			if v, ok := view.(ViewDoPatch); ok {
+				resp = v.DoPatch(ctx)
+			}
+		case http.MethodDelete:
+			if v, ok := view.(ViewDoDelete); ok {
+				resp = v.DoDelete(ctx)
+			}
+		default:
+			return ErrorResponse(
+				"Method Not Allowed", http.StatusMethodNotAllowed)
+		}
+	}
 
-func (v *WebView) Redirect(url string) {
-	http.Redirect(
-		v.Env.Response.httpWriter, v.Env.Request.Request,
-		url, http.StatusFound)
+	// run after request method if exist
+	if v, ok := view.(ViewAfterRequest); ok {
+		return v.AfterRequest(ctx, resp)
+	}
+
+	return resp
 }

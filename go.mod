@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/denisenkom/go-mssqldb v0.12.3
-	github.com/exonlabs/go-logging v0.1.0
+	github.com/exonlabs/go-logging v0.2.0
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/lib/pq v1.10.9
 	github.com/mattn/go-sqlite3 v1.14.17
