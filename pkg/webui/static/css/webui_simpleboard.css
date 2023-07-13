@@ -1,0 +1,34 @@
+/*
+  :copyright: 2019-2023, ExonLabs. All rights reserved.
+  :license: BSD, see LICENSE for more details.
+*/
+
+html, body {min-width:768px}
+
+/* board design */
+#board-wrapper {position:relative; background-color:#f8f9fa; color:#343a40}
+[dir=ltr] #board-wrapper {padding-left:240px}
+[dir=rtl] #board-wrapper {padding-right:240px}
+
+#board-menu {position:fixed; top:0; bottom:0; width:240px}
+[dir=ltr] #board-menu {left:0}
+[dir=rtl] #board-menu {right:0}
+#board-page {overflow:auto}
+
+#board-menubody {overflow:auto}
+#board-menuhead {overflow:hidden}
+
+#board-pagehead {}
+#board-pagebody {margin-top:-40px; padding-top:40px}
+
+/* headbar */
+#pagehead-bar {height:40px; padding:0 15px;
+  background-color:#fff; box-shadow:0 1px 8px #ccc}
+#pagehead-title {line-height:40px; font-weight:bold; color:#343a40}
+
+
+@media print {
+  #board-wrapper,#board-page,#board-pagehead,#board-pagebody,#pagehead-bar {
+    left:0 !important; right:0 !important;
+    margin:0 !important; padding:0 !important}
+}
