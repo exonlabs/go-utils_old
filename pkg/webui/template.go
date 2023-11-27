@@ -1,38 +1,38 @@
 package webui
 
-import (
-	"strings"
-	"text/template"
-)
+// import (
+// 	"strings"
+// 	"text/template"
+// )
 
-var tplFunc = template.FuncMap{
-	"join":       strings.Join,
-	"replaceAll": strings.ReplaceAll,
-	"inStr": func(s []string, v string) bool {
-		for i := range s {
-			if v == s[i] {
-				return true
-			}
-		}
-		return false
-	},
-}
+// var tplFunc = template.FuncMap{
+// 	"join":       strings.Join,
+// 	"replaceAll": strings.ReplaceAll,
+// 	"inStr": func(s []string, v string) bool {
+// 		for i := range s {
+// 			if v == s[i] {
+// 				return true
+// 			}
+// 		}
+// 		return false
+// 	},
+// }
 
-func NewTemplate(name string) *template.Template {
-	return template.New(name).Option("missingkey=default").Funcs(tplFunc)
-}
+// func NewTemplate(name string) *template.Template {
+// 	return template.New(name).Option("missingkey=default").Funcs(tplFunc)
+// }
 
-func Render(data any, filenames ...string) (string, error) {
-	var err error
+// func Render(data any, filenames ...string) (string, error) {
+// 	var err error
 
-	t := NewTemplate(getLastFname(filenames))
-	t, err = t.ParseFiles(filenames...)
-	if err != nil {
-		return "", err
-	}
+// 	t := NewTemplate(getLastFname(filenames))
+// 	t, err = t.ParseFiles(filenames...)
+// 	if err != nil {
+// 		return "", err
+// 	}
 
-	return executeTpl(t, data)
-}
+// 	return executeTpl(t, data)
+// }
 
 // func RenderFS(fs fs.FS, data any, patterns ...string) (string, error) {
 // 	var err error

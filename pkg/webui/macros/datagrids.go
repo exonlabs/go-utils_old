@@ -83,7 +83,7 @@ func UiStdDataGrid(options map[string]any, styles string) (string, error) {
 		options["cdn_url"] = ""
 	}
 	if _, ok := options["grid_id"]; !ok {
-		options["grid_id"] = webui.RandInt(10000)
+		options["grid_id"] = RandInt(10000)
 	}
 	if _, ok := options["base_url"]; !ok {
 		options["base_url"] = ""

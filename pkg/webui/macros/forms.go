@@ -123,7 +123,7 @@ func UiInputForm(options map[string]any, styles string) (string, error) {
 		options["cdn_url"] = ""
 	}
 	if _, ok := options["form_id"]; !ok {
-		options["form_id"] = webui.RandInt(10000)
+		options["form_id"] = RandInt(10000)
 	}
 	if _, ok := options["submit_url"]; !ok {
 		options["submit_url"] = ""
@@ -223,7 +223,7 @@ func UiQBuilder(options map[string]any, styles string) (string, error) {
 		options["cdn_url"] = ""
 	}
 	if _, ok := options["form_id"]; !ok {
-		options["form_id"] = webui.RandInt(10000)
+		options["form_id"] = RandInt(10000)
 	}
 	if _, ok := options["allow_groups"]; !ok {
 		options["allow_groups"] = "1"
@@ -259,7 +259,7 @@ func UiLoginForm(options map[string]any, styles string) (string, error) {
 		options["cdn_url"] = ""
 	}
 	if _, ok := options["form_id"]; !ok {
-		options["form_id"] = webui.RandInt(10000)
+		options["form_id"] = RandInt(10000)
 	}
 	if _, ok := options["submit_url"]; !ok {
 		options["submit_url"] = ""

@@ -1,6 +1,9 @@
 package macros
 
 import (
+	"math/rand"
+	"strconv"
+
 	"github.com/exonlabs/go-utils/pkg/webui"
 )
 
@@ -36,4 +39,11 @@ func UiAlert(notifyType, msg string, icon, dismiss bool, styles string) (string,
 		"dismissible": dismiss,
 		"styles":      styles,
 	}, tplName)
+}
+
+func RandInt(index int) string {
+	min := 1
+	max := index
+	randVal := rand.Intn(max-min) + min
+	return strconv.Itoa(randVal)
 }

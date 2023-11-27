@@ -93,10 +93,3 @@ package webui
 
 // 	return Reply(wv, "", "", nil)
 // }
-
-// func RandInt(index int) string {
-// 	min := 1
-// 	max := index
-// 	randVal := rand.Intn(max-min) + min
-// 	return strconv.Itoa(randVal)
-// }
