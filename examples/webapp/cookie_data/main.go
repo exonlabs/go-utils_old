@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	"github.com/exonlabs/go-logging/pkg/xlog"
-	"github.com/exonlabs/go-utils/pkg/web"
+	"github.com/exonlabs/go-utils_old/pkg/web"
 )
 
 var (

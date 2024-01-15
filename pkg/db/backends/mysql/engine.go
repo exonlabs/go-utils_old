@@ -7,7 +7,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 
-	"github.com/exonlabs/go-utils/pkg/db"
+	"github.com/exonlabs/go-utils_old/pkg/db"
 )
 
 type KwArgs = map[string]any

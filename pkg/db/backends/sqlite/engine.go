@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/exonlabs/go-utils/pkg/db"
+	"github.com/exonlabs/go-utils_old/pkg/db"
 	"github.com/mattn/go-sqlite3"
 )
 

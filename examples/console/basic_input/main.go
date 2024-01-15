@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/exonlabs/go-utils/pkg/console"
+	"github.com/exonlabs/go-utils_old/pkg/console"
 )
 
 // represent results

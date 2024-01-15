@@ -1,4 +1,4 @@
-module github.com/exonlabs/go-utils
+module github.com/exonlabs/go-utils_old
 
 go 1.20
 

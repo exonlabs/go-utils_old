@@ -1,6 +1,6 @@
 package mssql
 
-import "github.com/exonlabs/go-utils/pkg/console"
+import "github.com/exonlabs/go-utils_old/pkg/console"
 
 func InteractiveConfig(defaults KwArgs) (KwArgs, error) {
 	options := KwArgs{}

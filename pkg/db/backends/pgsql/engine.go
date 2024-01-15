@@ -8,7 +8,7 @@ import (
 
 	_ "github.com/lib/pq"
 
-	"github.com/exonlabs/go-utils/pkg/db"
+	"github.com/exonlabs/go-utils_old/pkg/db"
 )
 
 type KwArgs = map[string]any

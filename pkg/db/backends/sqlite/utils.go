@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/exonlabs/go-utils/pkg/console"
+	"github.com/exonlabs/go-utils_old/pkg/console"
 )
 
 func InteractiveConfig(defaults KwArgs) (KwArgs, error) {

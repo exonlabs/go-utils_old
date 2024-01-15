@@ -9,11 +9,11 @@ import (
 	"strings"
 
 	"github.com/exonlabs/go-logging/pkg/xlog"
-	"github.com/exonlabs/go-utils/pkg/db"
-	"github.com/exonlabs/go-utils/pkg/db/backends/mssql"
-	"github.com/exonlabs/go-utils/pkg/db/backends/mysql"
-	"github.com/exonlabs/go-utils/pkg/db/backends/pgsql"
-	"github.com/exonlabs/go-utils/pkg/db/backends/sqlite"
+	"github.com/exonlabs/go-utils_old/pkg/db"
+	"github.com/exonlabs/go-utils_old/pkg/db/backends/mssql"
+	"github.com/exonlabs/go-utils_old/pkg/db/backends/mysql"
+	"github.com/exonlabs/go-utils_old/pkg/db/backends/pgsql"
+	"github.com/exonlabs/go-utils_old/pkg/db/backends/sqlite"
 	"golang.org/x/exp/maps"
 )
 
